@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Platformer Game</title>
+<style>
+body {
+margin: 0;
+overflow: hidden;
+background: #333;
+}
+canvas {
+display: block;
+background: skyblue;
+border: 2px solid #000;
+}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="1000" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const gravity = 0.6;
+const friction = 0.8;
+
+const player = {
+x: 50,
+y: 400,
+width: 30,
+height: 40,
+velX: 0,
+velY: 0,
+speed: 4,
+jumpPower: -12,
+grounded: false,
+color: "red"
+};
+
+const keys = {};
+const platforms = [];
+const levelLength = 2000;
+
+// Create platforms
+for (let i = 0; i < 10; i++) {
+platforms.push({
+x: i * 200,
+y: 450 - Math.random() * 200,
+width: 120,
+height: 20
+});
+}
+
+// Add floor
+platforms.push({x: 0, y: 480, width: levelLength, height: 20});
+
+// Goal
+const goal = {
+x: levelLength - 100,
+y: 440,
+width: 40,
+height: 40,
+color: 'lime'
+};
+
+let scrollX = 0;
+let gameWon = false;
+
+function update() {
+if (gameWon) return;
+
+// Movement input
+if (keys['ArrowRight']) player.velX = player.speed;
+else if (keys['ArrowLeft']) player.velX = -player.speed;
+else player.velX *= friction;
+
+if (keys['Space'] || keys['ArrowUp']) {
+if (player.grounded) {
+player.velY = player.jumpPower;
+player.grounded = false;
+}
+}
+
+// Apply gravity
+player.velY += gravity;
+
+player.x += player.velX;
+player.y += player.velY;
+
+// Platform collision
+player.grounded = false;
+platforms.forEach(p => {
+if (player.x < p.x + p.width &&
+player.x + player.width > p.x &&
+player.y < p.y + p.height &&
+player.y + player.height > p.y) {
+// Collision detected
+if (player.velY > 0) {
+player.y = p.y - player.height;
+player.velY = 0;
+player.grounded = true;
+}
+}
+});
+
+// Scroll world
+if (player.x > 500) {
+scrollX = player.x - 500;
+}
+
+// Check win
+if (player.x + player.width >= goal.x && player.y + player.height >= goal.y) {
+gameWon = true;
+alert("🎉 You reached the goal! You win!");
+}
+}
+
+function draw() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+ctx.save();
+ctx.translate(-scrollX, 0);
+
+// Draw platforms
+ctx.fillStyle = "#654321";
+platforms.forEach(p => {
+ctx.fillRect(p.x, p.y, p.width, p.height);
+});
+
+// Draw goal
+ctx.fillStyle = goal.color;
+ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+// Draw player
+ctx.fillStyle = player.color;
+ctx.fillRect(player.x, player.y, player.width, player.height);
+
+ctx.restore();
+}
+
+function gameLoop() {
+update();
+draw();
+requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+gameLoop();
+</script>
+</body>
+</html>
