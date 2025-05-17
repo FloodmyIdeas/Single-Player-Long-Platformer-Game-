@@ -2,23 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Challenging Platformer</title>
+  <title>Extreme Platformer</title>
   <style>
     body {
       margin: 0;
-      overflow: hidden;
       background: #222;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     canvas {
       background: #87CEEB;
-      display: block;
-      margin: auto;
       border: 2px solid black;
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="1000" height="500"></canvas>
+  <button onclick="restartGame()">🔁 Restart</button>
+  <canvas id="gameCanvas" width="1000" height="500"></canvas>
+
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -40,25 +50,32 @@ const player = {
 };
 
 const keys = {};
-const platforms = [
-  { x: 0, y: 460, width: 200, height: 20 },
-  { x: 300, y: 400, width: 120, height: 20 },
-  { x: 500, y: 330, width: 120, height: 20 },
-  { x: 700, y: 270, width: 120, height: 20 },
-  { x: 900, y: 220, width: 120, height: 20 },
-  { x: 1100, y: 270, width: 120, height: 20 },
-  { x: 1300, y: 330, width: 120, height: 20 },
-  { x: 1500, y: 400, width: 120, height: 20 },
-  { x: 1700, y: 460, width: 200, height: 20 }
-];
+const platforms = [];
+const levelWidth = 3200;
 
+// Generate HARD platform layout
+let px = 0;
+for (let i = 0; i < 30; i++) {
+  const gap = 80 + Math.random() * 100;
+  const width = 60 + Math.random() * 40;
+  const height = 20;
+  const y = 300 + Math.sin(i * 0.5) * 120;
+  platforms.push({ x: px, y: y, width: width, height: height });
+  px += gap + width;
+}
+
+// Add a floor at the start
+platforms.unshift({ x: 0, y: 460, width: 200, height: 20 });
+
+// Add final platform & goal
 const goal = {
-  x: 1750,
+  x: px - 100,
   y: 420,
   width: 40,
   height: 40,
   color: "lime"
 };
+platforms.push({ x: goal.x - 10, y: goal.y + 40, width: 120, height: 20 });
 
 let scrollX = 0;
 let gameWon = false;
@@ -69,6 +86,11 @@ function resetPlayer() {
   player.velX = 0;
   player.velY = 0;
   scrollX = 0;
+  gameWon = false;
+}
+
+function restartGame() {
+  resetPlayer();
 }
 
 function update() {
@@ -84,7 +106,6 @@ function update() {
   }
 
   player.velY += gravity;
-
   player.x += player.velX;
   player.y += player.velY;
 
@@ -104,12 +125,12 @@ function update() {
     }
   });
 
-  // Fall off world
+  // Fall off = reset
   if (player.y > canvas.height + 200) {
     resetPlayer();
   }
 
-  // Scroll screen
+  // Scroll
   if (player.x > 500) scrollX = player.x - 500;
 
   // Win condition
@@ -120,7 +141,7 @@ function update() {
     player.y < goal.y + goal.height
   ) {
     gameWon = true;
-    alert("🏁 You won! Great job!");
+    alert("🏆 YOU WON! You're a parkour master!");
   }
 }
 
@@ -130,15 +151,12 @@ function draw() {
   ctx.save();
   ctx.translate(-scrollX, 0);
 
-  // Platforms
   ctx.fillStyle = "#654321";
   platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
 
-  // Goal
   ctx.fillStyle = goal.color;
   ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
 
-  // Player
   ctx.fillStyle = player.color;
   ctx.fillRect(player.x, player.y, player.width, player.height);
 
@@ -154,6 +172,7 @@ function gameLoop() {
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
+resetPlayer();
 gameLoop();
 </script>
 </body>
