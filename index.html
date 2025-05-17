@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Extreme Platformer</title>
+  <title>Extreme Puzzle Platformer</title>
   <style>
     body {
       margin: 0;
-      background: #222;
+      background: #111;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -51,26 +51,34 @@ const player = {
 
 const keys = {};
 const platforms = [];
-const levelWidth = 3200;
+const levelWidth = 3000;
 
-// Generate HARD platform layout
+// Generate hard platforms
 let px = 0;
-for (let i = 0; i < 30; i++) {
-  const gap = 80 + Math.random() * 100;
+for (let i = 0; i < 15; i++) {
+  const gap = 100 + Math.random() * 100;
   const width = 60 + Math.random() * 40;
-  const height = 20;
-  const y = 300 + Math.sin(i * 0.5) * 120;
-  platforms.push({ x: px, y: y, width: width, height: height });
+  const y = 300 + Math.sin(i * 0.4) * 100;
+  platforms.push({ x: px, y: y, width: width, height: 20 });
   px += gap + width;
 }
 
-// Add a floor at the start
+// Add floor at start
 platforms.unshift({ x: 0, y: 460, width: 200, height: 20 });
 
-// Add final platform & goal
+// Puzzle switch & hidden platforms
+let puzzleActivated = false;
+const switchPad = { x: 1000, y: 400, width: 40, height: 10, active: false };
+const hiddenPlatforms = [
+  { x: 1200, y: 300, width: 100, height: 20 },
+  { x: 1350, y: 250, width: 100, height: 20 },
+  { x: 1500, y: 200, width: 100, height: 20 }
+];
+
+// Goal
 const goal = {
-  x: px - 100,
-  y: 420,
+  x: 1650,
+  y: 160,
   width: 40,
   height: 40,
   color: "lime"
@@ -87,6 +95,8 @@ function resetPlayer() {
   player.velY = 0;
   scrollX = 0;
   gameWon = false;
+  puzzleActivated = false;
+  switchPad.active = false;
 }
 
 function restartGame() {
@@ -110,7 +120,10 @@ function update() {
   player.y += player.velY;
 
   player.grounded = false;
-  platforms.forEach(p => {
+
+  const allPlatforms = platforms.concat(puzzleActivated ? hiddenPlatforms : []);
+
+  allPlatforms.forEach(p => {
     if (
       player.x < p.x + p.width &&
       player.x + player.width > p.x &&
@@ -125,7 +138,18 @@ function update() {
     }
   });
 
-  // Fall off = reset
+  // Puzzle activation
+  if (
+    player.x + player.width > switchPad.x &&
+    player.x < switchPad.x + switchPad.width &&
+    player.y + player.height > switchPad.y &&
+    player.y < switchPad.y + switchPad.height + 20
+  ) {
+    switchPad.active = true;
+    puzzleActivated = true;
+  }
+
+  // Death
   if (player.y > canvas.height + 200) {
     resetPlayer();
   }
@@ -133,7 +157,7 @@ function update() {
   // Scroll
   if (player.x > 500) scrollX = player.x - 500;
 
-  // Win condition
+  // Win check
   if (
     player.x + player.width > goal.x &&
     player.x < goal.x + goal.width &&
@@ -141,22 +165,34 @@ function update() {
     player.y < goal.y + goal.height
   ) {
     gameWon = true;
-    alert("🏆 YOU WON! You're a parkour master!");
+    alert("🎉 YOU WIN! Puzzle and parkour mastered!");
   }
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   ctx.save();
   ctx.translate(-scrollX, 0);
 
+  // Platforms
   ctx.fillStyle = "#654321";
   platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
 
+  // Puzzle switch
+  ctx.fillStyle = switchPad.active ? "green" : "orange";
+  ctx.fillRect(switchPad.x, switchPad.y, switchPad.width, switchPad.height);
+
+  // Hidden platforms
+  if (puzzleActivated) {
+    ctx.fillStyle = "#444";
+    hiddenPlatforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+  }
+
+  // Goal
   ctx.fillStyle = goal.color;
   ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
 
+  // Player
   ctx.fillStyle = player.color;
   ctx.fillRect(player.x, player.y, player.width, player.height);
 
